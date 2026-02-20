@@ -91,7 +91,7 @@ export default function NotesScreen() {
   const handleNotePress = (note: Note) => {
     console.log('📖 Opening note:', note.id);
     router.push({
-      pathname: '/modal',
+      pathname: '/NoteEditor',   // was '/modal'
       params: { noteId: note.id },
     });
   };
@@ -122,7 +122,7 @@ export default function NotesScreen() {
   };
 
   const handleCreateNote = () => {
-    router.push('/modal');
+      router.push('/NoteEditor');  // was '/modal'
   };
 
   const handleRefresh = async () => {
@@ -166,33 +166,36 @@ export default function NotesScreen() {
         />
       ));
     } else {
-      // Double column layout
-      const rows = [];
-      for (let i = 0; i < filteredNotes.length; i += 2) {
-        rows.push(
-          <View key={i} style={styles.gridRow}>
-            <View style={styles.gridItem}>
+      // Split notes into two independent columns (masonry style)
+      const leftColumn = filteredNotes.filter((_, i) => i % 2 === 0);
+      const rightColumn = filteredNotes.filter((_, i) => i % 2 === 1);
+
+      return (
+        <View style={styles.gridContainer}>
+          <View style={styles.gridColumn}>
+            {leftColumn.map(note => (
               <NoteCard
-                note={filteredNotes[i]}
+                key={note.id}
+                note={note}
                 onPress={handleNotePress}
                 onDelete={handleDeleteNote}
                 onPin={handlePinNote}
               />
-            </View>
-            {filteredNotes[i + 1] && (
-              <View style={styles.gridItem}>
-                <NoteCard
-                  note={filteredNotes[i + 1]}
-                  onPress={handleNotePress}
-                  onDelete={handleDeleteNote}
-                  onPin={handlePinNote}
-                />
-              </View>
-            )}
+            ))}
           </View>
-        );
-      }
-      return rows;
+          <View style={styles.gridColumn}>
+            {rightColumn.map(note => (
+              <NoteCard
+                key={note.id}
+                note={note}
+                onPress={handleNotePress}
+                onDelete={handleDeleteNote}
+                onPin={handlePinNote}
+              />
+            ))}
+          </View>
+        </View>
+      );
     }
   };
 
@@ -297,6 +300,13 @@ const styles = StyleSheet.create({
 
     width: '100%',
     alignItems: 'center',
+  },
+  gridContainer: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  gridColumn: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',

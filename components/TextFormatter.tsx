@@ -108,8 +108,8 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   buttonActive: {
-    backgroundColor: '#6200EE',
-    borderColor: '#6200EE',
+    backgroundColor: '#faab00',
+    borderColor: '#faab00',
   },
   buttonText: {
     fontSize: 20,

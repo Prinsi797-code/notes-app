@@ -28,7 +28,8 @@
     "styleText": "Style your text",
     "deleteNote": "Delete Note",
     "deleteShort": "Are you sure you want to delete this note?",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "unpin": "Unpin"
   },
   "categories": {
     "All": "All",
