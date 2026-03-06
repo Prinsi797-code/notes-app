@@ -107,7 +107,7 @@ export default function LanguageSelectionScreen() {
 
         <View style={{ flex: 1 }} />
 
-        <TouchableOpacity
+        {/* <TouchableOpacity
           onPress={handleSave}
           style={styles.iconButton}
           disabled={isAdLoading}
@@ -118,6 +118,18 @@ export default function LanguageSelectionScreen() {
           ]}>
             {isAdLoading ? '...' : t('home.save')}
           </Text>
+        </TouchableOpacity> */}
+
+
+        <TouchableOpacity
+          onPress={handleSave}
+          disabled={isAdLoading}
+          style={[styles.iconButton, { backgroundColor: colors.primary }]}
+        >
+          {isAdLoading
+            ? <Text style={[styles.saveButtonText, { color: isAdLoading ? colors.textSecondary : colors.primary }]}>...</Text>
+            : <Ionicons name="checkmark" size={20} color="#fff" />
+          }
         </TouchableOpacity>
 
       </View>
@@ -191,10 +203,8 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     borderBottomWidth: 1,
   },
-  iconButton: {
-    padding: 4,
-    width: 60,
-  },
+  iconButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',

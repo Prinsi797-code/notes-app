@@ -1,42 +1,37 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-    clearTransactionIOS,
-    endConnection,
-    fetchProducts,
-    finishTransaction,
-    getAvailablePurchases,
-    initConnection,
-    Purchase,
-    PurchaseError,
-    purchaseErrorListener,
-    purchaseUpdatedListener,
-    requestPurchase,
-    Subscription,
+  clearTransactionIOS,
+  endConnection,
+  fetchProducts,
+  finishTransaction,
+  getAvailablePurchases,
+  initConnection,
+  Purchase,
+  PurchaseError,
+  purchaseErrorListener,
+  purchaseUpdatedListener,
+  requestPurchase,
+  Subscription,
 } from 'expo-iap';
 
-// =============================================
-// ⚠️ Apna Product ID yahan replace karo
-// App Store Connect me jo set kiya tha wahi daalo
-// =============================================
 export const SUBSCRIPTION_SKUS = {
-  weekly:  'com.hevin.notesApp.weekly',   // <-- replace karo
-  monthly: 'com.hevin.notesApp.monthly',  // <-- replace karo
-  yearly:  'com.hevin.notesApp.yearly',   // <-- replace karo
+  weekly: 'com.hevin.notesApp.weeklyplan',
+  monthly: 'com.hevin.notesApp.monthlyplan',
+  yearly: 'com.hevin.notesApp.yearlyplan',
 };
 
-// AsyncStorage keys
-const PREMIUM_STATUS_KEY  = 'premium_status';
-const PREMIUM_EXPIRY_KEY  = 'premium_expiry_date';
+const PREMIUM_STATUS_KEY = 'premium_status';
+const PREMIUM_EXPIRY_KEY = 'premium_expiry_date';
 const PREMIUM_PRODUCT_KEY = 'premium_product_id';
-const PREMIUM_TRANS_KEY   = 'premium_transaction_id';
-const PREMIUM_DATE_KEY    = 'premium_purchase_date';
+const PREMIUM_TRANS_KEY = 'premium_transaction_id';
+const PREMIUM_DATE_KEY = 'premium_purchase_date';
 
 export interface PremiumInfo {
-  isPremium:     boolean;
-  expiryDate:    string | null;
-  productId:     string | null;
+  isPremium: boolean;
+  expiryDate: string | null;
+  productId: string | null;
   transactionId: string | null;
-  purchaseDate:  string | null;
+  purchaseDate: string | null;
 }
 
 class PurchaseManager {
@@ -45,8 +40,11 @@ class PurchaseManager {
   private purchaseUpdateSub: any = null;
   private purchaseErrorSub: any = null;
 
+  private isProcessingPurchase = false;
+  private processedTransactionIds = new Set<string>();
+
   private onSuccessCallback: ((productId: string) => void) | null = null;
-  private onErrorCallback:   ((error: string) => void) | null = null;
+  private onErrorCallback: ((error: string) => void) | null = null;
 
   static getInstance(): PurchaseManager {
     if (!PurchaseManager.instance) {
@@ -58,38 +56,59 @@ class PurchaseManager {
   // ==================== INITIALIZE ====================
   async initialize(): Promise<boolean> {
     try {
-      if (this.isConnected) return true;
+      if (!this.isConnected) {
+        await initConnection();
+        this.isConnected = true;
+        console.log('✅ IAP Connected (expo-iap)');
+        clearTransactionIOS();
+      }
 
-      await initConnection();
-      this.isConnected = true;
-      console.log('✅ IAP Connected (expo-iap)');
+      // ✅ Listeners pehle remove karo, phir fresh register karo (har baar)
+      this.removeListeners();
 
-      // iOS: pending transactions clear karo
-      clearTransactionIOS();
-
-      // Purchase success listener
+      // ✅ NAYA — duplicate transaction guard
       this.purchaseUpdateSub = purchaseUpdatedListener(async (purchase: Purchase) => {
         console.log('🛒 Purchase received:', purchase.productId);
 
-        const receipt = (purchase as any).transactionReceipt;
-        if (!receipt) return;
+        const validSkus = Object.values(SUBSCRIPTION_SKUS);
+        if (!validSkus.includes(purchase.productId)) {
+          console.log('⚠️ Unknown SKU, skipping:', purchase.productId);
+          return;
+        }
+
+        // ✅ Duplicate transaction check — same transactionId dobara process mat karo
+        const transactionId = (purchase as any).transactionId ?? purchase.productId;
+        if (this.processedTransactionIds.has(transactionId)) {
+          console.log('⏭️ Already processed, skipping:', transactionId);
+          // Transaction finish karo lekin callback mat chalao
+          try { await finishTransaction({ purchase, isConsumable: false }); } catch { }
+          return;
+        }
+
+        // ✅ Ek baar mein sirf ek purchase process karo
+        if (this.isProcessingPurchase) {
+          console.log('⏳ Already processing a purchase, skipping duplicate event');
+          return;
+        }
+
+        this.isProcessingPurchase = true;
+        this.processedTransactionIds.add(transactionId);
 
         try {
-          // Transaction finish karna zaroori hai
           await finishTransaction({ purchase, isConsumable: false });
-
-          // Local me save karo
           await this.savePremium(purchase);
-
           console.log('✅ Purchase finished & saved:', purchase.productId);
           this.onSuccessCallback?.(purchase.productId);
         } catch (err) {
           console.log('❌ finishTransaction error:', err);
+          // Failed toh processed set se hatao taaki retry ho sake
+          this.processedTransactionIds.delete(transactionId);
           this.onErrorCallback?.('Transaction completion failed');
+        } finally {
+          this.isProcessingPurchase = false;
         }
       });
 
-      // Purchase error listener
       this.purchaseErrorSub = purchaseErrorListener((error: PurchaseError) => {
         console.log('❌ Purchase error:', error.code, error.message);
         if (error.code !== 'E_USER_CANCELLED') {
@@ -103,7 +122,7 @@ class PurchaseManager {
         this.isConnected = true;
         return true;
       }
-      console.log('❌ IAP init error:', error);
+      console.log('IAP init error:', error);
       return false;
     }
   }
@@ -111,19 +130,28 @@ class PurchaseManager {
   // ==================== SET CALLBACKS ====================
   setCallbacks(
     onSuccess: (productId: string) => void,
-    onError:   (error: string) => void
+    onError: (error: string) => void
   ) {
     this.onSuccessCallback = onSuccess;
-    this.onErrorCallback   = onError;
+    this.onErrorCallback = onError;
+  }
+
+  // ==================== GET ACTIVE PURCHASED SKU ====================
+  async getActivePurchasedSku(): Promise<string | null> {
+    try {
+      const info = await this.getPremiumInfo();
+      return info.productId ?? null;
+    } catch {
+      return null;
+    }
   }
 
   // ==================== GET PRODUCTS FROM APP STORE ====================
-  // ✅ FIX: getProducts → fetchProducts, skus → productIds
   async getSubscriptionProducts(): Promise<Subscription[]> {
     try {
       const productIds = Object.values(SUBSCRIPTION_SKUS);
+      console.log('📦 Fetching SKUs:', productIds);
       const products = await fetchProducts({ productIds });
-    //   const products = await fetchProducts({ productIds, type: 'sub' });
       console.log('📦 Products fetched:', products.length);
       return products as Subscription[];
     } catch (error) {
@@ -133,7 +161,6 @@ class PurchaseManager {
   }
 
   // ==================== PURCHASE SUBSCRIPTION ====================
-  // ✅ FIX: requestSubscription → requestPurchase with new API
   async purchaseSubscription(sku: string): Promise<void> {
     try {
       console.log('🛒 Requesting subscription:', sku);
@@ -144,10 +171,9 @@ class PurchaseManager {
         },
         type: 'subs',
       });
-      // Result purchaseUpdatedListener me aata hai
     } catch (error: any) {
       if (error?.code !== 'E_USER_CANCELLED') {
-        console.log('❌ requestPurchase error:', error);
+        console.log('requestPurchase error:', error);
         throw error;
       }
     }
@@ -164,24 +190,24 @@ class PurchaseManager {
       );
 
       await AsyncStorage.multiSet([
-        [PREMIUM_STATUS_KEY,  'true'],
-        [PREMIUM_EXPIRY_KEY,  expiryDate.toISOString()],
+        [PREMIUM_STATUS_KEY, 'true'],
+        [PREMIUM_EXPIRY_KEY, expiryDate.toISOString()],
         [PREMIUM_PRODUCT_KEY, purchase.productId],
-        [PREMIUM_TRANS_KEY,   (purchase as any).transactionId ?? ''],
-        [PREMIUM_DATE_KEY,    purchaseDate.toISOString()],
+        [PREMIUM_TRANS_KEY, (purchase as any).transactionId ?? ''],
+        [PREMIUM_DATE_KEY, purchaseDate.toISOString()],
       ]);
 
-      console.log('✅ Premium saved, expires:', expiryDate.toISOString());
+      console.log('Premium saved, expires:', expiryDate.toISOString());
     } catch (err) {
-      console.log('❌ savePremium error:', err);
+      console.log('savePremium error:', err);
     }
   }
 
   private expiryDuration(productId: string): number {
-    if (productId.includes('weekly'))  return 7   * 86400 * 1000;
-    if (productId.includes('monthly')) return 30  * 86400 * 1000;
-    if (productId.includes('yearly'))  return 365 * 86400 * 1000;
-    return 7 * 86400 * 1000; // default 7 days
+    if (productId.includes('weekly')) return 7 * 86400 * 1000;
+    if (productId.includes('monthly')) return 30 * 86400 * 1000;
+    if (productId.includes('yearly')) return 365 * 86400 * 1000;
+    return 7 * 86400 * 1000;
   }
 
   // ==================== GET PREMIUM INFO ====================
@@ -198,11 +224,11 @@ class PurchaseManager {
       pairs.forEach(([k, v]) => { m[k] = v; });
 
       return {
-        isPremium:     m[PREMIUM_STATUS_KEY] === 'true',
-        expiryDate:    m[PREMIUM_EXPIRY_KEY],
-        productId:     m[PREMIUM_PRODUCT_KEY],
+        isPremium: m[PREMIUM_STATUS_KEY] === 'true',
+        expiryDate: m[PREMIUM_EXPIRY_KEY],
+        productId: m[PREMIUM_PRODUCT_KEY],
         transactionId: m[PREMIUM_TRANS_KEY],
-        purchaseDate:  m[PREMIUM_DATE_KEY],
+        purchaseDate: m[PREMIUM_DATE_KEY],
       };
     } catch {
       return { isPremium: false, expiryDate: null, productId: null, transactionId: null, purchaseDate: null };
@@ -218,7 +244,7 @@ class PurchaseManager {
   // ==================== RESTORE FROM APP STORE ====================
   async checkAndRestorePremium(): Promise<boolean> {
     try {
-      console.log('🔄 Restoring from App Store...');
+      console.log('Restoring from App Store...');
 
       const purchases = await getAvailablePurchases();
       if (!purchases || purchases.length === 0) {
@@ -232,14 +258,14 @@ class PurchaseManager {
 
       if (active) {
         await this.savePremium(active);
-        console.log('✅ Premium restored:', active.productId);
+        console.log('Premium restored:', active.productId);
         return true;
       }
 
       await this.clearPremium();
       return false;
     } catch (error) {
-      console.log('❌ Restore error, using local fallback:', error);
+      console.log('Restore error, using local fallback:', error);
       return this.isPremium();
     }
   }
@@ -253,6 +279,7 @@ class PurchaseManager {
       PREMIUM_TRANS_KEY,
       PREMIUM_DATE_KEY,
     ]);
+    this.processedTransactionIds.clear();
     console.log('🗑️ Premium cleared');
   }
 
@@ -261,7 +288,7 @@ class PurchaseManager {
     this.purchaseUpdateSub?.remove();
     this.purchaseErrorSub?.remove();
     this.purchaseUpdateSub = null;
-    this.purchaseErrorSub  = null;
+    this.purchaseErrorSub = null;
   }
 
   async disconnect(): Promise<void> {

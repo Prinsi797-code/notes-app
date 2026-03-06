@@ -5,14 +5,8 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 
 import AdsManager from '@/services/adsManager';
-import {
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
-} from 'react-native';
+import { Linking, SafeAreaView, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
 
 export default function SettingsScreen() {
   const { isDarkMode, themeMode } = useTheme();
@@ -40,6 +34,27 @@ export default function SettingsScreen() {
 
   const handleLanguagePress = () => {
     router.push('/Languageselectionscreen');
+  };
+
+  const handlePrivacyPolicy = async () => {
+    const url = 'https://altranotes.blogspot.com/';
+    const supported = await Linking.canOpenURL(url);
+    if (supported) {
+      await Linking.openURL(url);
+    } else {
+      console.log('❌ Cannot open URL:', url);
+    }
+  };
+
+  const handleShareApp = async () => {
+    try {
+      await Share.share({
+        message: 'Check out this amazing app! 📅\nhttps://apps.apple.com/in/app/smart-calendar-2026/id6756920857',
+        url: 'https://apps.apple.com/in/app/smart-calendar-2026/id6756920857', // iOS ke liye
+      });
+    } catch (error) {
+      console.log('❌ Share error:', error);
+    }
   };
 
   const getThemeLabel = () => {
@@ -157,12 +172,57 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+
         {/* About Section */}
+
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>
             {t('home.about')}
           </Text>
+
           <View style={[styles.settingCard, isDarkMode && styles.darkCard]}>
+            <TouchableOpacity style={styles.settingRow} activeOpacity={0.6}onPress={handlePrivacyPolicy}>
+              <View style={styles.settingLeft}>
+                <View style={[styles.iconContainer, { backgroundColor: '#00BCD415' }]}>
+                    <Ionicons name="shield-checkmark" size={22} color="#4CAF50" />
+                </View>
+                <Text style={[styles.settingTitle, isDarkMode && styles.darkText]}>
+                  {t('home.privacypolicy')}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#999" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={[styles.settingCard, isDarkMode && styles.darkCard, { marginTop: 12 }]}>
+            <TouchableOpacity style={styles.settingRow} activeOpacity={0.6}>
+              <View style={styles.settingLeft}>
+                <View style={[styles.iconContainer, { backgroundColor: '#00BCD415' }]}>
+                    <Ionicons name="star" size={22} color="#FFC107" />
+                </View>
+                <Text style={[styles.settingTitle, isDarkMode && styles.darkText]}>
+                  {t('home.rateus')}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#999" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={[styles.settingCard, isDarkMode && styles.darkCard, { marginTop: 12 }]}>
+            <TouchableOpacity style={styles.settingRow} activeOpacity={0.6} onPress={handleShareApp}>
+              <View style={styles.settingLeft}>
+                <View style={[styles.iconContainer, { backgroundColor: '#00BCD415' }]}>
+                    <Ionicons name="share-social" size={22} color="#2196F3" />
+                </View>
+                <Text style={[styles.settingTitle, isDarkMode && styles.darkText]}>
+                  {t('home.share')}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#999" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={[styles.settingCard, isDarkMode && styles.darkCard, { marginTop: 12 }]}>
             <TouchableOpacity style={styles.settingRow} activeOpacity={0.6}>
               <View style={styles.settingLeft}>
                 <View style={[styles.iconContainer, { backgroundColor: '#00BCD415' }]}>

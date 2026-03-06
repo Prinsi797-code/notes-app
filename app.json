@@ -7,12 +7,16 @@
     "icon": "./assets/images/logo.png",
     "scheme": "mynotesapp",
     "userInterfaceStyle": "automatic",
+    "buildNumber": "10",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.hevin.notesApp",
+      "buildNumber": "10",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "UltraNotes needs access to your Photo Library so you can select photos and attach them to your notes.",
+        "NSPhotoLibraryAddUsageDescription": "UltraNotes needs permission to save drawings and images to your Photo Library."
       }
     },
     "android": {
@@ -60,7 +64,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "e2dfccc8-be1a-40af-b7b8-b024c5218bd6"
+        "projectId": "4e4ec0f4-9ad9-4cd2-b236-097ad916aded"
       }
     }
   }

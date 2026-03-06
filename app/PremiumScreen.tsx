@@ -1,3 +1,4 @@
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/Themecontext';
 import { Ionicons } from '@expo/vector-icons';
 import { Subscription } from 'expo-iap';
@@ -9,6 +10,7 @@ import {
   Animated,
   Dimensions,
   Image,
+  Linking,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -71,35 +73,49 @@ const PLANS: Plan[] = [
 
 export default function PremiumScreen() {
   const { isDarkMode } = useTheme();
+  const { t } = useLanguage();
+
   const [selectedPlan, setSelectedPlan] = useState<PlanKey>('yearly');
   const [products, setProducts] = useState<Record<string, Subscription>>({});
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
+  const [activePlanKey, setActivePlanKey] = useState<PlanKey | null>(null);
+
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
-  const bg          = isDarkMode ? '#0D0D0D' : '#ffffff';
-  const cardBg      = isDarkMode ? '#1A1A1A' : '#FFFFFF';
-  const textPrimary = isDarkMode ? '#FFFFFF' : '#1A1A1A';
+  const bg           = isDarkMode ? '#0D0D0D' : '#ffffff';
+  const cardBg       = isDarkMode ? '#1A1A1A' : '#FFFFFF';
+  const textPrimary  = isDarkMode ? '#FFFFFF' : '#1A1A1A';
   const textSecondary = isDarkMode ? '#AAAAAA' : '#666666';
-  const accent = '#faab00';
+  const accent       = '#faab00';
+  const activeGreen  = '#22c55e';
 
   useEffect(() => {
     initAndLoad();
-    return () => { PurchaseManager.removeListeners(); };
+    return () => {};
   }, []);
+
+  // ✅ ProductId se PlanKey detect karo (calendar app logic)
+  const getPlanKeyFromProductId = (productId: string): PlanKey | null => {
+    if (productId.includes('yearly'))  return 'yearly';
+    if (productId.includes('monthly')) return 'monthly';
+    if (productId.includes('weekly'))  return 'weekly';
+    return null;
+  };
 
   const initAndLoad = async () => {
     try {
       setLoading(true);
       await PurchaseManager.initialize();
 
+      // ✅ Callbacks pehle set karo
       PurchaseManager.setCallbacks(
-        (_productId) => {
+        (productId) => {
           setPurchasing(false);
-          Alert.alert('🎉 Premium Activated!', 'All ads removed. Enjoy!', [
-            { text: 'Great!', onPress: () => router.back() },
-          ]);
+          const key = getPlanKeyFromProductId(productId);
+          if (key) setActivePlanKey(key);
+          router.replace('/Purchasesuccessscreen');
         },
         (error) => {
           setPurchasing(false);
@@ -111,6 +127,23 @@ export default function PremiumScreen() {
       const map: Record<string, Subscription> = {};
       subs.forEach((s) => { map[s.productId] = s; });
       setProducts(map);
+
+      // ✅ Calendar app jaisa: getPremiumInfo se seedha check karo
+      const premiumInfo = await PurchaseManager.getPremiumInfo();
+      if (premiumInfo.isPremium && premiumInfo.productId) {
+        const key = getPlanKeyFromProductId(premiumInfo.productId);
+        if (key) setActivePlanKey(key);
+      } else {
+        // Local mein nahi mila toh App Store se restore karo
+        const restored = await PurchaseManager.checkAndRestorePremium();
+        if (restored) {
+          const activeSku = await PurchaseManager.getActivePurchasedSku();
+          if (activeSku) {
+            const key = getPlanKeyFromProductId(activeSku);
+            if (key) setActivePlanKey(key);
+          }
+        }
+      }
     } catch (err) {
       console.log('initAndLoad error:', err);
     } finally {
@@ -118,7 +151,6 @@ export default function PremiumScreen() {
     }
   };
 
-  // App Store se real price, fallback static
   const getPriceForPlan = (plan: Plan): string => {
     const p = products[plan.sku];
     return (p as any)?.localizedPrice ?? (p as any)?.price ?? plan.fallbackPrice;
@@ -127,6 +159,12 @@ export default function PremiumScreen() {
   const handleSubscribe = useCallback(async () => {
     const selected = PLANS.find((p) => p.key === selectedPlan);
     if (!selected) return;
+
+    // ✅ Already active plan pe click kiya toh purchase mat karo
+    if (activePlanKey === selectedPlan) {
+      Alert.alert('Already Active', `You already have the ${selected.label} plan active.`);
+      return;
+    }
 
     Animated.sequence([
       Animated.timing(scaleAnim, { toValue: 0.96, duration: 100, useNativeDriver: true }),
@@ -139,13 +177,18 @@ export default function PremiumScreen() {
     } catch {
       setPurchasing(false);
     }
-  }, [selectedPlan, scaleAnim]);
+  }, [selectedPlan, scaleAnim, activePlanKey]);
 
   const handleRestore = async () => {
     setRestoring(true);
     try {
       const restored = await PurchaseManager.checkAndRestorePremium();
       if (restored) {
+        const premiumInfo = await PurchaseManager.getPremiumInfo();
+        if (premiumInfo.productId) {
+          const key = getPlanKeyFromProductId(premiumInfo.productId);
+          if (key) setActivePlanKey(key);
+        }
         Alert.alert('✅ Restored!', 'Premium has been restored.', [
           { text: 'OK', onPress: () => router.back() },
         ]);
@@ -159,11 +202,28 @@ export default function PremiumScreen() {
     }
   };
 
+  // ✅ Button label — calendar app jaisa
+  const getButtonLabel = (): string => {
+    if (purchasing) return 'Processing...';
+    if (activePlanKey === selectedPlan) return 'Current Plan';
+    if (activePlanKey && activePlanKey !== selectedPlan) return 'Switch Plan';
+    return 'Subscribe Now';
+  };
+
+  const getButtonColor = (): string => {
+    if (activePlanKey === selectedPlan) return activeGreen;
+    return accent;
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: bg }]}>
       <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scroll}
+        bounces={false}
+        overScrollMode="never"
+      >
         {/* Hero */}
         <View style={styles.heroSection}>
           <Image source={require('../assets/images/Frame.png')} style={styles.heroImage} resizeMode="cover" />
@@ -175,7 +235,7 @@ export default function PremiumScreen() {
             </View>
           </TouchableOpacity>
           <View style={styles.titleOverlay}>
-            <Text style={styles.titleOverlayText}>Remove ads and unlock premium features.</Text>
+            <Text style={styles.titleOverlayText}>{t('home.removeads')}</Text>
           </View>
         </View>
 
@@ -190,34 +250,72 @@ export default function PremiumScreen() {
         <View style={styles.plansContainer}>
           {PLANS.map((plan) => {
             const isSelected = selectedPlan === plan.key;
+            const isActive   = activePlanKey === plan.key;
+
             return (
               <TouchableOpacity
                 key={plan.key}
                 activeOpacity={0.8}
                 onPress={() => setSelectedPlan(plan.key)}
                 style={[styles.planCard, {
-                  backgroundColor: isSelected ? (isDarkMode ? '#2A1A1A' : '#fffaf0') : cardBg,
-                  borderColor: isSelected ? accent : (isDarkMode ? '#333' : '#eeeeee'),
-                  borderWidth: isSelected ? 2 : 1,
+                  backgroundColor: isActive
+                    ? (isDarkMode ? '#0D2010' : '#F0FFF4')
+                    : isSelected
+                      ? (isDarkMode ? '#2A1A1A' : '#fffaf0')
+                      : cardBg,
+                  borderColor: isActive
+                    ? activeGreen
+                    : isSelected
+                      ? accent
+                      : (isDarkMode ? '#333' : '#eeeeee'),
+                  borderWidth: isActive || isSelected ? 2 : 1,
                 }]}
               >
-                {plan.badge && (
+                {/* Badge */}
+                {isActive ? (
+                  <View style={[styles.badge, { backgroundColor: activeGreen }]}>
+                    <Text style={styles.badgeText}>✓ Active</Text>
+                  </View>
+                ) : plan.badge ? (
                   <View style={[styles.badge, { backgroundColor: plan.badgeColor }]}>
                     <Text style={styles.badgeText}>{plan.badge}</Text>
                   </View>
-                )}
+                ) : null}
+
                 <View style={styles.planRow}>
-                  <View style={[styles.radio, { borderColor: isSelected ? accent : (isDarkMode ? '#555' : '#CCC') }]}>
-                    {isSelected && <View style={[styles.radioDot, { backgroundColor: accent }]} />}
+                  {/* Radio */}
+                  <View style={[styles.radio, {
+                    borderColor: isActive
+                      ? activeGreen
+                      : isSelected
+                        ? accent
+                        : (isDarkMode ? '#555' : '#CCC'),
+                    backgroundColor: isActive ? activeGreen : 'transparent',
+                  }]}>
+                    {isActive ? (
+                      <Ionicons name="checkmark" size={13} color="#fff" />
+                    ) : isSelected ? (
+                      <View style={[styles.radioDot, { backgroundColor: accent }]} />
+                    ) : null}
                   </View>
+
                   <View style={styles.planInfo}>
                     <Text style={[styles.planLabel, { color: textPrimary }]}>
                       {plan.label} : {getPriceForPlan(plan)}
                     </Text>
-                    <Text style={[styles.planSub, { color: textSecondary }]}>{plan.sub}</Text>
+                    {/* ✅ Active plan pe "Your current plan" dikhao */}
+                    <Text style={[styles.planSub, {
+                      color: isActive ? activeGreen : textSecondary,
+                      fontWeight: isActive ? '600' : 'normal',
+                    }]}>
+                      {isActive ? '🟢 Your current plan' : plan.sub}
+                    </Text>
                   </View>
+
                   <View style={styles.discountBox}>
-                    {plan.highlight ? (
+                    {isActive ? (
+                      <Ionicons name="checkmark-circle" size={28} color={activeGreen} />
+                    ) : plan.highlight ? (
                       <View style={[styles.discountPill, { backgroundColor: accent }]}>
                         <Text style={styles.discountPillText}>{plan.discount}</Text>
                       </View>
@@ -234,47 +332,48 @@ export default function PremiumScreen() {
           })}
         </View>
 
-        {/* Subscribe Button */}
+        {/* Subscribe / Switch / Current Plan Button */}
         <Animated.View style={[styles.subscribeWrap, { transform: [{ scale: scaleAnim }] }]}>
           <TouchableOpacity
-            style={[styles.subscribeBtn, { backgroundColor: accent, opacity: purchasing ? 0.7 : 1 }]}
+            style={[styles.subscribeBtn, {
+              backgroundColor: getButtonColor(),
+              opacity: purchasing || loading ? 0.7 : 1,
+            }]}
             onPress={handleSubscribe}
             activeOpacity={0.9}
             disabled={purchasing || loading}
           >
-            {purchasing
-              ? <ActivityIndicator color="#FFF" style={{ marginRight: 8 }} />
-              : <Ionicons name="diamond" size={18} color="#FFF" style={{ marginRight: 8 }} />
-            }
-            <Text style={styles.subscribeBtnText}>
-              {purchasing ? 'Processing...' : 'Subscribe Now'}
-            </Text>
+            {purchasing ? (
+              <ActivityIndicator color="#FFF" style={{ marginRight: 8 }} />
+            ) : activePlanKey === selectedPlan ? (
+              <Ionicons name="checkmark-circle" size={18} color="#FFF" style={{ marginRight: 8 }} />
+            ) : activePlanKey && activePlanKey !== selectedPlan ? (
+              <Ionicons name="swap-horizontal" size={18} color="#FFF" style={{ marginRight: 8 }} />
+            ) : (
+              <Ionicons name="diamond" size={18} color="#FFF" style={{ marginRight: 8 }} />
+            )}
+            <Text style={styles.subscribeBtnText}>{getButtonLabel()}</Text>
           </TouchableOpacity>
         </Animated.View>
 
         {/* Restore */}
-        {/* <TouchableOpacity onPress={handleRestore} disabled={restoring} style={styles.restoreBtn}>
+        <TouchableOpacity onPress={handleRestore} disabled={restoring} style={styles.restoreBtn}>
           {restoring
             ? <ActivityIndicator color={textSecondary} size="small" />
-            : <Text style={[styles.restoreText, { color: textSecondary }]}>Restore Purchases</Text>
+            : <Text style={[styles.restoreText, { color: textSecondary }]}>{t('home.restorepurchase')}</Text>
           }
-        </TouchableOpacity> */}
+        </TouchableOpacity>
 
         {/* Footer */}
         <View style={styles.footer}>
-          <TouchableOpacity>
-            <Text style={[styles.footerLink, { color: textSecondary }]}>Terms and Conditions</Text>
+          <TouchableOpacity onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}>
+            <Text style={[styles.footerLink, { color: textSecondary }]}>{t('home.termsofuse')}</Text>
           </TouchableOpacity>
           <View style={[styles.footerDivider, { backgroundColor: textSecondary }]} />
-          <TouchableOpacity>
-            <Text style={[styles.footerLink, { color: textSecondary }]}>Privacy Policy</Text>
+          <TouchableOpacity onPress={() => Linking.openURL('https://altranotes.blogspot.com/')}>
+            <Text style={[styles.footerLink, { color: textSecondary }]}>{t('home.privacypolicy')}</Text>
           </TouchableOpacity>
         </View>
-
-        {/* <Text style={[styles.disclaimer, { color: textSecondary }]}>
-          Subscription renews automatically unless canceled 24 hours before period end.
-          Manage in App Store account settings.
-        </Text> */}
 
         <View style={{ height: 30 }} />
       </ScrollView>
@@ -317,5 +416,4 @@ const styles = StyleSheet.create({
   footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 12, paddingHorizontal: 20, marginBottom: 12 },
   footerLink: { fontSize: 13, textDecorationLine: 'underline' },
   footerDivider: { width: 1, height: 14, opacity: 0.4 },
-  disclaimer: { fontSize: 11, textAlign: 'center', paddingHorizontal: 24, lineHeight: 16, marginBottom: 10 },
 });

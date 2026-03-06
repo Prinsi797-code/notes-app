@@ -86,7 +86,7 @@ export default function ThemeSelectionScreen() {
 
         <View style={{ flex: 1 }} />
 
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={styles.saveButton}
           onPress={handleSave}
           disabled={isAdLoading}
@@ -96,7 +96,21 @@ export default function ThemeSelectionScreen() {
             size={24}
             color={isAdLoading ? colors.textSecondary : colors.primary}
           />
+        </TouchableOpacity> */}
+
+
+        <TouchableOpacity
+          onPress={handleSave}
+          disabled={isAdLoading}
+          style={[styles.saveButton, { backgroundColor: colors.primary }]}
+        >
+          {isAdLoading
+            ? <Text style={[styles.saveButtonText, { color: isAdLoading ? colors.textSecondary : colors.primary }]}>...</Text>
+            : <Ionicons name="checkmark" size={20} color="#fff" />
+          }
         </TouchableOpacity>
+
+
       </View>
 
       {/* Mode Label */}
@@ -200,7 +214,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-     flexDirection: 'row',
+    flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 20,
@@ -216,7 +230,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   saveButton: {
-    padding: 4,
+    width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center'
     // width: 60,
   },
   content: {
@@ -258,6 +272,11 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
     borderRadius: 8,
     padding: 8,
+  },
+   saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'right',
   },
   darkPreview: {
     flex: 1,

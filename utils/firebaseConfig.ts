@@ -5,26 +5,26 @@ import {
   getFirestore,
 } from "firebase/firestore";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAI2-FCmWHJY5ZXBYKgUqGiX2Bf4bQMSJQ",
-  authDomain: "notes-app-59abe.firebaseapp.com",
-  projectId: "notes-app-59abe",
-  storageBucket: "notes-app-59abe.firebasestorage.app",
-  messagingSenderId: "29560446221",
-  appId: "1:29560446221:web:8b54ff7cfb626bd6a36444",
-  measurementId: "G-1FR9C49MR2"
-};
+// const firebaseConfig = {
+//   apiKey: "AIzaSyAI2-FCmWHJY5ZXBYKgUqGiX2Bf4bQMSJQ",
+//   authDomain: "notes-app-59abe.firebaseapp.com",
+//   projectId: "notes-app-59abe",
+//   storageBucket: "notes-app-59abe.firebasestorage.app",
+//   messagingSenderId: "29560446221",
+//   appId: "1:29560446221:web:8b54ff7cfb626bd6a36444",
+//   measurementId: "G-1FR9C49MR2"
+// };
 
 // live data
-// const firebaseConfig = {
-//   apiKey: "AIzaSyBvCx7x8KR_avnavFvb-E-jMrA1_E8hsEo",
-//   authDomain: "calendar-app-ba9d6.firebaseapp.com",
-//   projectId: "calendar-app-ba9d6",
-//   storageBucket: "calendar-app-ba9d6.firebasestorage.app",
-//   messagingSenderId: "557672501111",
-//   appId: "1:557672501111:web:7f5c9952b3fa3fd9849b72",
-//   measurementId: "G-PSLGEMZW9G"
-// };
+const firebaseConfig = {
+  apiKey: "AIzaSyDHjYPZoiOMngNU1pKCOJCQEf4emxSDXrQ",
+  authDomain: "notes-app-473a7.firebaseapp.com",
+  projectId: "notes-app-473a7",
+  storageBucket: "notes-app-473a7.firebasestorage.app",
+  messagingSenderId: "173209080858",
+  appId: "1:173209080858:web:d218449bd49ed4151eada3",
+  measurementId: "G-MNERDBRFNP"
+};
 
 // Initialize Firebase Only Once
 let app;

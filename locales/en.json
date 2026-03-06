@@ -29,7 +29,44 @@
     "deleteNote": "Delete Note",
     "deleteShort": "Are you sure you want to delete this note?",
     "cancel": "Cancel",
-    "unpin": "Unpin"
+    "unpin": "Unpin",
+    "restorepurchase": "Restore Purchases",
+    "privacypolicy": "Privacy Policy",
+    "termsofuse": "Terms of Use",
+    "managesubscription": "Manage Subscription",
+    "subscribenow": "Subscribe Now",
+    "removeads": "Remove ads and unlock\npremium features.",
+
+
+    "activecolor": "Active Color",
+    "tapcolorchange": "Tap a color to change",
+    "Opacity": "Opacity",
+    "Size": "Size",
+    "savedrawing": "Save Drawing",
+    "gopremiumtosave": "Go Premium to save instantly.",
+    "gopremium": "Go Premium",
+    "Cancel": "Cancel",
+    "addsticker": "Add Sticker",
+    "addtext": "Add Text",
+    "Discardchanges": "Discard Changes?",
+    "unsavedchanges": "You have unsaved changes. Are you sure you want to discard them?",
+    "keepEditing": "Keep Editing",
+    "discard": "Discard",
+    "destructive": "destructive",
+    "add": "Add",
+    "clearcanvas": "Clear Canvas",
+    "clearalldrawing": "Clear all drawings?",
+    "Clear": "Clear",
+
+    "Checklist": "Checklist",
+    "Note": "Note",
+    "rateus": "Rate Us",
+    "checklisttitle": "checklist Title",
+    "listitem": "List item",
+    "additem": "Add item",
+    "titlenot": "Title",
+    "starttyping": "Start typing"
+    
   },
   "categories": {
     "All": "All",
@@ -44,25 +81,25 @@
     "Travel": "Travel",
     "Other": "Other"
   },
-    "language": {
-      "error": "Failed to change language",
-      "errorTitle": "Error",
-      "success": "Language changed successfully!",
-      "successTitle": "Success"
-    },
-    "model": {
-      "newnote": "New Note",
-      "noteTitle": "Note Title",
-      "category": "Category",
-      "noteColor": "Note Color",
-      "textFormatting": "Text Formatting",
-      "styleText": "Style your text",
-      "content": "Content",
-      "writeNote": "Write your note here...",
-      "attachImage": "Attach Images",
-      "addImages": "Add Images",
-      "editNote": "Edit Note",
-      "imageadded": "image added",
-      "itemsList": "Type your list items..."
-    }
+  "language": {
+    "error": "Failed to change language",
+    "errorTitle": "Error",
+    "success": "Language changed successfully!",
+    "successTitle": "Success"
+  },
+  "model": {
+    "newnote": "New Note",
+    "noteTitle": "Note Title",
+    "category": "Category",
+    "noteColor": "Note Color",
+    "textFormatting": "Text Formatting",
+    "styleText": "Style your text",
+    "content": "Content",
+    "writeNote": "Write your note here...",
+    "attachImage": "Attach Images",
+    "addImages": "Add Images",
+    "editNote": "Edit Note",
+    "imageadded": "image added",
+    "itemsList": "Type your list items..."
+  }
 }

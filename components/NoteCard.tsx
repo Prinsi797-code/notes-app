@@ -28,31 +28,32 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note, onPress, onDelete, onP
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const { t } = useLanguage();
 
+  const ts = note.textStyle ?? { bold: false, italic: false, underline: false, list: false };
+  const isChecklist = note.type === 'checklist';
+
+  // ✅ Card background:
+  // - Both note & checklist use theme background (no user color as bg)
+  // - Dark → #1E1E1E, Light → #F5F5F5
+  const cardBg = colors.cardBackground;
+
+  // User selected color → only shown as small circle in footer
+  const userColor = note.color?.color ?? null;
+
   const textStyle = [
     styles.noteContent,
-    note.textStyle?.bold && styles.boldText,
-    note.textStyle?.italic && styles.italicText,
-    note.textStyle?.underline && styles.underlineText,
+    { color: colors.textSecondary },
+    ts.bold && styles.boldText,
+    ts.italic && styles.italicText,
+    ts.underline && styles.underlineText,
   ];
 
-  const handleDelete = () => {
-    setMenuVisible(false);
-    onDelete(note.id);
-  };
-
-  const handlePin = () => {
-    setMenuVisible(false);
-    onPin(note.id);
-  };
+  const handleDelete = () => { setMenuVisible(false); onDelete(note.id); };
+  const handlePin = () => { setMenuVisible(false); onPin(note.id); };
 
   const handleShare = async () => {
     setMenuVisible(false);
     try {
-      const shareContent = `${note.title}\n\n${note.content}`;
-      await Share.share({
-        message: shareContent,
-        title: note.title,
-      });
+      await Share.share({ message: `${note.title}\n\n${note.content}`, title: note.title });
     } catch (error) {
       console.error('Error sharing note:', error);
     }
@@ -62,22 +63,58 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note, onPress, onDelete, onP
     const date = new Date(dateString);
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    if (diffInHours < 48) return 'Yesterday';
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
 
-    if (diffInHours < 24) {
-      return `${diffInHours}h ago`;
-    } else if (diffInHours < 48) {
-      return 'Yesterday';
-    } else {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    }
+  // ── Checklist card preview ─────────────────────────────────────────────────
+  const renderChecklistContent = () => {
+    if (!note.content) return null;
+    const allLines = note.content.split('\n').filter(l => l.trim());
+    const preview = allLines.slice(0, 5);
+    const remaining = allLines.length - 5;
+    return (
+      <View style={styles.checklistContainer}>
+        {preview.map((line, idx) => {
+          const isChecked = line.startsWith('☑');
+          const text = line.replace(/^[☐☑]\s*/, '');
+          return (
+            <View key={idx} style={styles.checklistRow}>
+              <View style={[
+                styles.checkboxSmall,
+                { borderColor: colors.primary },
+                isChecked && { backgroundColor: colors.primary, borderColor: colors.primary },
+              ]}>
+                {isChecked && <Ionicons name="checkmark" size={10} color="#fff" />}
+              </View>
+              <Text
+                style={[
+                  styles.checklistItemText,
+                  { color: colors.textSecondary },
+                  isChecked && { textDecorationLine: 'line-through', color: colors.textTertiary },
+                ]}
+                numberOfLines={1}
+              >
+                {text}
+              </Text>
+            </View>
+          );
+        })}
+        {remaining > 0 && (
+          <Text style={[styles.moreItemsText, { color: colors.textTertiary }]}>
+            +{remaining} more items
+          </Text>
+        )}
+      </View>
+    );
   };
 
   const renderContent = () => {
-    if (note.textStyle?.list && note.content) {
+    if (isChecklist) return renderChecklistContent();
+    if (ts.list && note.content) {
       return note.content.split('\n').map((line, idx) => (
-        <Text key={idx} style={textStyle}>
-          • {line}
-        </Text>
+        <Text key={idx} style={textStyle}>• {line}</Text>
       ));
     }
     return <Text style={textStyle} numberOfLines={4}>{note.content}</Text>;
@@ -86,24 +123,24 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note, onPress, onDelete, onP
   return (
     <>
       <TouchableOpacity
-        style={[styles.card, { backgroundColor: note.color.color }]}
+        style={[
+          styles.card,
+          { backgroundColor: cardBg },
+          isDarkMode && { borderWidth: 1, borderColor: colors.border },
+        ]}
         onPress={() => onPress(note)}
         activeOpacity={0.7}
       >
         {/* Pin Indicator */}
         {note.pinned && (
           <View style={styles.pinIndicator}>
-            <MaterialIcons
-                name="push-pin"
-                size={16}
-                color={colors.primary} 
-              />
+            <MaterialIcons name="push-pin" size={16} color={colors.primary} />
           </View>
         )}
 
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title} numberOfLines={2}>
+          <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={2}>
             {note.title}
           </Text>
           <TouchableOpacity
@@ -115,30 +152,30 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note, onPress, onDelete, onP
             }}
             style={styles.menuButton}
           >
-            <Ionicons name="ellipsis-vertical" size={20} color="#666" />
+            <Ionicons name="ellipsis-vertical" size={20} color={colors.textTertiary} />
           </TouchableOpacity>
         </View>
 
         {/* Category Badge */}
-        <View style={styles.categoryBadge}>
-          <Text style={styles.categoryIcon}>{CATEGORY_ICONS[note.category]}</Text>
-          <Text style={styles.categoryText}>{note.category}</Text>
+        <View style={[
+          styles.categoryBadge,
+          { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' },
+        ]}>
+          {isChecklist
+            ? <Ionicons name="checkbox-outline" size={11} color={colors.textSecondary} style={{ marginRight: 3 }} />
+            : <Text style={styles.categoryIcon}>{CATEGORY_ICONS[note.category]}</Text>
+          }
+          <Text style={[styles.categoryText, { color: colors.textSecondary }]}>{note.category}</Text>
         </View>
 
         {/* Content */}
         {note.content ? (
-          <View style={styles.contentContainer}>
-            {renderContent()}
-          </View>
+          <View style={styles.contentContainer}>{renderContent()}</View>
         ) : null}
 
         {/* Images Preview */}
-        {note.images && note.images.length > 0 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.imagePreviewContainer}
-          >
+        {!isChecklist && note.images && note.images.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagePreviewContainer}>
             {note.images.slice(0, 3).map((uri, index) => (
               <Image key={index} source={{ uri }} style={styles.imagePreview} />
             ))}
@@ -150,21 +187,23 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note, onPress, onDelete, onP
           </ScrollView>
         )}
 
-        {/* Footer */}
+        {/* ── Footer: date left, color circle right ── */}
         <View style={styles.footer}>
-          <Text style={styles.dateText}>{formatDate(note.updatedAt)}</Text>
-          {(note.textStyle.bold || note.textStyle.italic || note.textStyle.underline || note.textStyle.list) && (
-            <View style={styles.formattingIndicators}>
-              {note.textStyle.bold && <Text style={styles.indicator}>B</Text>}
-              {note.textStyle.italic && <Text style={styles.indicator}>I</Text>}
-              {note.textStyle.underline && <Text style={styles.indicator}>U</Text>}
-              {note.textStyle.list && <Ionicons name="list" size={12} color="#666" />}
-            </View>
+          <Text style={[styles.dateText, { color: colors.textTertiary }]}>
+            {formatDate(note.updatedAt)}
+          </Text>
+
+          {/* ✅ User selected color → small circle, no formatting B/I/U */}
+          {/* {userColor && (
+            <View style={[styles.colorDot, { backgroundColor: userColor }]} />
+          )} */}
+          {!isChecklist && userColor && (
+            <View style={[styles.colorDot, { backgroundColor: userColor }]} />
           )}
         </View>
       </TouchableOpacity>
 
-      {/* Menu Modal */}
+      {/* Context Menu Modal */}
       <Modal
         visible={menuVisible}
         transparent
@@ -176,26 +215,19 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note, onPress, onDelete, onP
           activeOpacity={1}
           onPress={() => setMenuVisible(false)}
         >
-          <View
-            style={[
-              styles.menuContainer,
-              {
-                position: 'absolute',
-                top: menuPosition.y - 20,
-                right: 16,
-                backgroundColor: colors.cardBackground,
-                borderWidth: isDarkMode ? 1 : 0,
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            {/* Pin / Unpin */}
+          <View style={[
+            styles.menuContainer,
+            {
+              position: 'absolute',
+              top: menuPosition.y - 20,
+              right: 16,
+              backgroundColor: colors.cardBackground,
+              borderWidth: isDarkMode ? 1 : 0,
+              borderColor: colors.border,
+            },
+          ]}>
             <TouchableOpacity style={styles.menuItem} onPress={handlePin}>
-              <MaterialIcons
-                name="push-pin"
-                size={22}
-                color={colors.textPrimary} 
-              />
+              <MaterialIcons name="push-pin" size={22} color={colors.textPrimary} />
               <Text style={[styles.menuText, { color: colors.textPrimary }]}>
                 {note.pinned ? t('home.unpin') : t('home.pin')}
               </Text>
@@ -203,15 +235,13 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note, onPress, onDelete, onP
 
             <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
 
-            {/* Share */}
             <TouchableOpacity style={styles.menuItem} onPress={handleShare}>
               <Ionicons name="share-outline" size={22} color={colors.textPrimary} />
-              <Text style={[styles.menuText, { color: colors.textPrimary }]}>{t('home.share')} </Text>
+              <Text style={[styles.menuText, { color: colors.textPrimary }]}>{t('home.share')}</Text>
             </TouchableOpacity>
 
             <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
 
-            {/* Delete */}
             <TouchableOpacity style={styles.menuItem} onPress={handleDelete}>
               <Ionicons name="trash-outline" size={22} color="#E53935" />
               <Text style={[styles.menuText, styles.deleteText]}>{t('home.delete')}</Text>
@@ -235,142 +265,72 @@ const styles = StyleSheet.create({
     elevation: 3,
     position: 'relative',
   },
-  pinIndicator: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    zIndex: 1,
-  },
+  pinIndicator: { position: 'absolute', top: 8, right: 8, zIndex: 1 },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'flex-start', marginBottom: 8,
   },
-  title: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    flex: 1,
-    marginRight: 8,
-  },
-  menuButton: {
-    padding: 2,
-  },
+  title: { fontSize: 17, fontWeight: '700', flex: 1, marginRight: 8 },
+  menuButton: { padding: 2 },
   categoryBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(0, 0, 0, 0.08)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-    marginBottom: 8,
+    flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start',
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, marginBottom: 8,
   },
-  categoryIcon: {
-    fontSize: 11,
-    marginRight: 3,
+  categoryIcon: { fontSize: 11, marginRight: 3 },
+  categoryText: { fontSize: 11, fontWeight: '600' },
+  contentContainer: { marginBottom: 8 },
+  noteContent: { fontSize: 13, lineHeight: 18 },
+  boldText: { fontWeight: '700' },
+  italicText: { fontStyle: 'italic' },
+  underlineText: { textDecorationLine: 'underline' },
+
+  // Checklist
+  checklistContainer: { gap: 6 },
+  checklistRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  checkboxSmall: {
+    width: 16, height: 16, borderRadius: 4,
+    borderWidth: 1.5, alignItems: 'center', justifyContent: 'center',
   },
-  categoryText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#555',
-  },
-  contentContainer: {
-    marginBottom: 8,
-  },
-  noteContent: {
-    fontSize: 13,
-    color: '#444',
-    lineHeight: 18,
-  },
-  boldText: {
-    fontWeight: '700',
-  },
-  italicText: {
-    fontStyle: 'italic',
-  },
-  underlineText: {
-    textDecorationLine: 'underline',
-  },
-  imagePreviewContainer: {
-    marginVertical: 10,
-  },
-  imagePreview: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    marginRight: 8,
-  },
+  checklistItemText: { flex: 1, fontSize: 13 },
+  moreItemsText: { fontSize: 11, marginTop: 4 },
+
+  imagePreviewContainer: { marginVertical: 10 },
+  imagePreview: { width: 80, height: 80, borderRadius: 8, marginRight: 8 },
   moreImagesOverlay: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 80, height: 80, borderRadius: 8,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center', alignItems: 'center',
   },
-  moreImagesText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  moreImagesText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+
   footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 8,
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', marginTop: 8,
   },
-  dateText: {
-    fontSize: 12,
-    color: '#888',
+  dateText: { fontSize: 12 },
+
+  // ✅ Small color dot in footer
+  colorDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 7,
+    // subtle border so white color is also visible
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.12)',
   },
-  formattingIndicators: {
-    flexDirection: 'row',
-    gap: 4,
-  },
-  indicator: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#666',
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
+
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' },
   menuContainer: {
-    // backgroundColor removed from here — set dynamically via colors.cardBackground
-    borderRadius: 12,
-    width: 180,
-    paddingVertical: 8,
-    elevation: 8,
-    shadowColor: '#000',
+    borderRadius: 12, width: 180, paddingVertical: 8,
+    elevation: 8, shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowOpacity: 0.3, shadowRadius: 8,
   },
   menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 16, paddingVertical: 14,
   },
-  menuText: {
-    fontSize: 16,
-    // color removed from here — set dynamically via colors.textPrimary
-    marginLeft: 12,
-    fontWeight: '500',
-  },
-  deleteText: {
-    color: '#E53935',
-  },
-  menuDivider: {
-    height: 1,
-    // backgroundColor removed from here — set dynamically via colors.border
-    marginHorizontal: 16,
-  },
+  menuText: { fontSize: 16, marginLeft: 12, fontWeight: '500' },
+  deleteText: { color: '#E53935' },
+  menuDivider: { height: 1, marginHorizontal: 16 },
 });
