@@ -56,7 +56,7 @@ export default function ThemeSelectionScreen() {
   const handleSave = async () => {
     if (isAdLoading) return;
     setIsAdLoading(true);
-    await AdsManager.showSettingScreenInterstitialAd('setting_screen', 'save');
+    // await AdsManager.showSettingScreenInterstitialAd('setting_screen', 'save');
     try {
       await setThemeMode(selectedTheme);
       console.log('Theme save pressed — attempting ad...');
