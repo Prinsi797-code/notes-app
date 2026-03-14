@@ -9,7 +9,9 @@ import {
     SkPath,
     useCanvasRef,
 } from '@shopify/react-native-skia';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
+import * as MediaLibrary from 'expo-media-library';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import {
@@ -125,6 +127,31 @@ export default function DrawingScreen() {
         setShowColorPicker(false);
         setShowAddMenu(false);
         setShowStrokePanel(false);
+    };
+
+    const handleDownloadToGallery = async () => {
+        if (paths.length === 0 && textOverlays.length === 0) {
+            Alert.alert(t('nothing_save'), t('draw_something'));
+            return;
+        }
+        try {
+            const { status } = await MediaLibrary.requestPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert(t('permission_need'), t('please_allow_access'));
+                return;
+            }
+            const image = canvasRef.current?.makeImageSnapshot();
+            if (!image) { Alert.alert(t('error'), t('could_note_capture')); return; }
+
+            const base64 = image.encodeToBase64();
+            const tempUri = FileSystem.documentDirectory + 'dl_' + Date.now() + '.png';
+            await FileSystem.writeAsStringAsync(tempUri, base64, { encoding: FileSystem.EncodingType.Base64 });
+            await MediaLibrary.saveToLibraryAsync(tempUri);
+            FileSystem.deleteAsync(tempUri, { idempotent: true }).catch(() => { });
+            Alert.alert(t('Saved!'), t('drawing_saved_to_your'));
+        } catch (e: any) {
+            Alert.alert('Error', e?.message ?? 'Could not save drawing.');
+        }
     };
 
     const syncColor = (c: string) => {
@@ -367,6 +394,15 @@ export default function DrawingScreen() {
                             <Ionicons name="arrow-redo" size={22}
                                 color={redoStack.length ? colors.primary : colors.textTertiary} />
                         </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={handleDownloadToGallery}
+                            style={styles.headerIconBtn}
+                            disabled={paths.length === 0 && textOverlays.length === 0}
+                        >
+                            <Ionicons name="download-outline" size={22}
+                                color={(paths.length > 0 || textOverlays.length > 0) ? colors.primary : colors.textTertiary} />
+                        </TouchableOpacity>
+
                         <TouchableOpacity
                             onPress={() => Alert.alert(t('clearcanvas'), t('clearalldrawing'), [
                                 { text: t('Cancel'), style: 'cancel' },

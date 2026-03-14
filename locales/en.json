@@ -61,12 +61,37 @@
     "Checklist": "Checklist",
     "Note": "Note",
     "rateus": "Rate Us",
-    "checklisttitle": "checklist Title",
+    "checklisttitle": "check list Title",
     "listitem": "List item",
     "additem": "Add item",
     "titlenot": "Title",
-    "starttyping": "Start typing"
-    
+    "starttyping": "Start typing",
+
+
+    "column_options": "COLUMN OPTIONS",
+    "add_col": "Add Column",
+    "delete_last_col": "Delete Last Column",
+    "Table_options": "TABLE OPTIONS",
+    "add_row": "Add Row",
+    "delete_row": "Delete Last Row",
+    "delete_col": "Delete Last Column",
+    "remove_table": "Remove Table",
+    "row_options": "ROW OPTIONS",
+    "delete_last_row": "Delete Last Row",
+    "saved": "Saved!",
+    "image_saved": "Image saved to gallery",
+    "ok": "ok",
+
+    "permission_need": "Permission needed",
+    "please_allow_access": "Please allow access to save to gallery.",
+    "could_note_capture": "Could not capture drawing",
+    "Error": "error",
+    "saved!": "Saved! ✓",
+    "drawing_saved_to_your": "Drawing saved to your gallery",
+    "nothing_save": "Nothing to save",
+    "draw_something": "Draw something first!",
+    "please_allow_save_image": "Please allow access to save images to gallery."
+
   },
   "categories": {
     "All": "All",

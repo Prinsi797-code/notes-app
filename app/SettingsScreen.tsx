@@ -2,11 +2,14 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/Themecontext';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import AdsManager from '@/services/adsManager';
 import { Linking, SafeAreaView, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
+import {
+  BannerAdSize,
+  GAMBannerAd
+} from 'react-native-google-mobile-ads';
 
 export default function SettingsScreen() {
   const { isDarkMode, themeMode } = useTheme();
@@ -14,17 +17,36 @@ export default function SettingsScreen() {
   const [isAdLoading, setIsAdLoading] = useState(false);
 
   const handleGoBack = async () => {
-    if (isAdLoading) return; // Double tap prevention
+    if (isAdLoading) return;
     setIsAdLoading(true);
-
     try {
-      console.log('⬅️ Settings back pressed — attempting ad...');
+      console.log('Settings back pressed — attempting ad...');
       await AdsManager.showSettingScreenInterstitialAd('back');
     } catch (error) {
-      console.log('❌ Settings ad error:', error);
+      console.log('Settings ad error:', error);
     } finally {
       setIsAdLoading(false);
-      router.back(); // Ad show ho ya na ho — wapas jaao
+      router.back();
+    }
+  };
+
+  const [bannerConfig, setBannerConfig] = useState<{ show: boolean; id: string } | null>(null);
+  useEffect(() => {
+    const loadBannerConfig = async () => {
+      const config = await AdsManager.getBannerConfig('setting');
+      if (config) setBannerConfig(config);
+    };
+    loadBannerConfig();
+  }, []);
+
+  const handleRateUs = async () => {
+    const url = "https://apps.apple.com/app/UltraNotes/id6759310867";
+
+    const supported = await Linking.canOpenURL(url);
+    if (supported) {
+      await Linking.openURL(url);
+    } else {
+      console.log("Cannot open App Store");
     }
   };
 
@@ -42,18 +64,18 @@ export default function SettingsScreen() {
     if (supported) {
       await Linking.openURL(url);
     } else {
-      console.log('❌ Cannot open URL:', url);
+      console.log('Cannot open URL:', url);
     }
   };
 
   const handleShareApp = async () => {
     try {
       await Share.share({
-        message: 'Check out this amazing app! 📅\nhttps://apps.apple.com/in/app/smart-calendar-2026/id6756920857',
-        url: 'https://apps.apple.com/in/app/smart-calendar-2026/id6756920857', // iOS ke liye
+        message: 'Check out this amazing app!',
+        url: 'https://apps.apple.com/app/UltraNotes/id6759310867', // iOS ke liye
       });
     } catch (error) {
-      console.log('❌ Share error:', error);
+      console.log('Share error:', error);
     }
   };
 
@@ -172,7 +194,6 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-
         {/* About Section */}
 
         <View style={styles.section}>
@@ -181,10 +202,10 @@ export default function SettingsScreen() {
           </Text>
 
           <View style={[styles.settingCard, isDarkMode && styles.darkCard]}>
-            <TouchableOpacity style={styles.settingRow} activeOpacity={0.6}onPress={handlePrivacyPolicy}>
+            <TouchableOpacity style={styles.settingRow} activeOpacity={0.6} onPress={handlePrivacyPolicy}>
               <View style={styles.settingLeft}>
                 <View style={[styles.iconContainer, { backgroundColor: '#00BCD415' }]}>
-                    <Ionicons name="shield-checkmark" size={22} color="#4CAF50" />
+                  <Ionicons name="shield-checkmark" size={22} color="#4CAF50" />
                 </View>
                 <Text style={[styles.settingTitle, isDarkMode && styles.darkText]}>
                   {t('home.privacypolicy')}
@@ -195,10 +216,14 @@ export default function SettingsScreen() {
           </View>
 
           <View style={[styles.settingCard, isDarkMode && styles.darkCard, { marginTop: 12 }]}>
-            <TouchableOpacity style={styles.settingRow} activeOpacity={0.6}>
+            <TouchableOpacity
+              style={styles.settingRow}
+              activeOpacity={0.6}
+              onPress={handleRateUs}
+            >
               <View style={styles.settingLeft}>
                 <View style={[styles.iconContainer, { backgroundColor: '#00BCD415' }]}>
-                    <Ionicons name="star" size={22} color="#FFC107" />
+                  <Ionicons name="star" size={22} color="#FFC107" />
                 </View>
                 <Text style={[styles.settingTitle, isDarkMode && styles.darkText]}>
                   {t('home.rateus')}
@@ -212,7 +237,7 @@ export default function SettingsScreen() {
             <TouchableOpacity style={styles.settingRow} activeOpacity={0.6} onPress={handleShareApp}>
               <View style={styles.settingLeft}>
                 <View style={[styles.iconContainer, { backgroundColor: '#00BCD415' }]}>
-                    <Ionicons name="share-social" size={22} color="#2196F3" />
+                  <Ionicons name="share-social" size={22} color="#2196F3" />
                 </View>
                 <Text style={[styles.settingTitle, isDarkMode && styles.darkText]}>
                   {t('home.share')}
@@ -238,8 +263,25 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </View>
         </View>
-
         <View style={styles.bottomSpacing} />
+
+        {bannerConfig?.show && (
+          <View
+            style={{
+              marginBottom: 0,
+              width: '100%',
+              // flex: 1,
+              justifyContent: 'center',
+              // backgroundColor: colors.background,
+            }}
+          >
+            <GAMBannerAd
+              unitId={bannerConfig.id}
+              sizes={[BannerAdSize.ANCHORED_ADAPTIVE_BANNER]}
+              requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+            />
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

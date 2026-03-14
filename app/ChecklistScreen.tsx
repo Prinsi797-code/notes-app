@@ -1,6 +1,7 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/Themecontext';
 import { useNotes } from '@/hooks/useNotes';
+import AdsManager from '@/services/adsManager';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
@@ -16,6 +17,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import {
+  BannerAdSize,
+  GAMBannerAd,
+} from 'react-native-google-mobile-ads';
 
 interface ChecklistItem {
   id: string;
@@ -53,6 +58,7 @@ export default function ChecklistScreen() {
     { id: generateId(), text: '', checked: false },
   ]);
   const [saving, setSaving] = useState(false);
+  const [isAdLoading, setIsAdLoading] = useState(false);
   const isEditing = !!noteId;
 
   const inputRefs = useRef<Record<string, TextInput | null>>({});
@@ -67,6 +73,12 @@ export default function ChecklistScreen() {
       }
     }
   }, [noteId, notes]);
+
+   const [bannerConfig, setBannerConfig] = useState<{ show: boolean; id: string } | null>(null);
+    useEffect(() => {
+      const config = AdsManager.getBannerConfig('note');
+      if (config) setBannerConfig(config);
+    }, []);
 
   // ── Item Actions ─────────────────────────────────────────────────────────
   const addItem = (afterId?: string) => {
@@ -144,7 +156,11 @@ export default function ChecklistScreen() {
         // Create new checklist
         await addNote(noteData);
       }
+      setIsAdLoading(true);
+      await AdsManager.showNoteScreenInterstitialAd('note_screen', 'save');
     } catch (error) {
+      setSaving(false);
+      setIsAdLoading(false);
       Alert.alert('Error', 'Failed to save checklist. Please try again.');
       setSaving(false);
       return;
@@ -155,7 +171,7 @@ export default function ChecklistScreen() {
     else router.replace('/(tabs)');
   };
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     const hasData = title.trim() || items.some(i => i.text.trim());
     if (hasData) {
       Alert.alert(t('home.Discardchanges'), t('home.unsavedchanges'), [
@@ -169,6 +185,20 @@ export default function ChecklistScreen() {
       ]);
     } else {
       router.canGoBack() ? router.back() : router.replace('/(tabs)');
+      await showAdAndGoBack();
+    }
+  };
+
+  const showAdAndGoBack = async () => {
+    if (isAdLoading) return;
+    setIsAdLoading(true);
+    try {
+      await AdsManager.showNoteScreenInterstitialAd('note_screen', 'back');
+    } catch (error) { }
+    finally {
+      setIsAdLoading(false);
+      if (router.canGoBack()) router.back();
+      else router.replace('/(tabs)');
     }
   };
 
@@ -183,19 +213,25 @@ export default function ChecklistScreen() {
       >
         {/* Header */}
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <TouchableOpacity onPress={handleCancel} style={styles.headerButton}>
-            <Ionicons name="arrow-back" size={26} color={colors.textPrimary} />
+
+          <TouchableOpacity onPress={handleCancel} style={styles.headerButton} disabled={isAdLoading || saving}>
+            <Ionicons name="chevron-back" size={28} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
+
+          {/* <TouchableOpacity onPress={handleCancel} style={styles.headerButton}>
+            <Ionicons name="arrow-back" size={26} color={colors.textPrimary} />
+          </TouchableOpacity> */}
+          {/* <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
             {isEditing ? t('home.Checklist') : t('home.Checklist')}
-          </Text>
+          </Text> */}
 
           <View style={{ flex: 1 }} />
 
           <TouchableOpacity
             onPress={handleSave}
-            disabled={saving}
+            disabled={saving || isAdLoading}
             style={[styles.saveBtn, { backgroundColor: colors.primary }]}
+          // disabled={saving || isAdLoading}
           >
             {saving
               ? <Text style={styles.saveBtnText}>...</Text>
@@ -213,7 +249,7 @@ export default function ChecklistScreen() {
           {/* Title */}
           <TextInput
             style={[styles.titleInput, { color: colors.textPrimary, borderBottomColor: colors.primary }]}
-            placeholder= {t('home.checklisttitle')}
+            placeholder={t('home.checklisttitle')}
             placeholderTextColor={colors.textTertiary}
             value={title}
             onChangeText={setTitle}
@@ -289,6 +325,16 @@ export default function ChecklistScreen() {
           )}
 
           <View style={{ height: 80 }} />
+
+          {bannerConfig?.show && (
+            <View style={{ width: '100%', alignItems: 'center', backgroundColor: colors.background }}>
+              <GAMBannerAd
+                unitId={bannerConfig.id}
+                sizes={[BannerAdSize.ANCHORED_ADAPTIVE_BANNER]}
+                requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+              />
+            </View>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -300,11 +346,11 @@ const styles = StyleSheet.create({
   keyboardView: { flex: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12, paddingTop: 20, borderBottomWidth: 1,
+    paddingHorizontal: 16, paddingVertical: 12, paddingTop: 10, paddingBottom: 4,
   },
-  headerButton: { padding: 4, minWidth: 50 },
+  headerButton: { padding: 0, minWidth: 44 },
   headerTitle: { fontSize: 20, fontWeight: '700' },
-  saveBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  saveBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   saveBtnText: { color: '#fff', fontWeight: '700' },
   scrollView: { flex: 1 },
   scrollContent: { padding: 16 },

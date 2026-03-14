@@ -12,6 +12,10 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import {
+  BannerAdSize,
+  GAMBannerAd
+} from 'react-native-google-mobile-ads';
 
 interface Language {
   code: string;
@@ -41,26 +45,35 @@ export default function LanguageSelectionScreen() {
     { code: 'hi', name: 'Hindi', nativeName: 'हिंदी', flag: require('@/assets/flags/hi.png') },
   ];
 
+  const [bannerConfig, setBannerConfig] = useState<{ show: boolean; id: string } | null>(null);
+  useEffect(() => {
+    const loadBannerConfig = async () => {
+      const config = await AdsManager.getBannerConfig('setting');
+      if (config) setBannerConfig(config);
+    };
+    loadBannerConfig();
+  }, []);
+
   useEffect(() => {
     setSelectedLanguage(locale);
   }, [locale]);
 
-  // ✅ Back button — ad show karo phir back jao
+  // Back button — ad show karo phir back jao
   const handleGoBack = async () => {
     if (isAdLoading) return;
     setIsAdLoading(true);
     try {
-      console.log('⬅️ Language back pressed — attempting ad...');
-      await AdsManager.showLanguageScreenInterstitialAd('back');
+      console.log('Language back pressed — attempting ad...');
+      await AdsManager.showSettingScreenInterstitialAd('back');
     } catch (error) {
-      console.log('❌ Language back ad error:', error);
+      console.log('Language back ad error:', error);
     } finally {
       setIsAdLoading(false);
       router.back();
     }
   };
 
-  // ✅ Save button — pehle language save karo, phir ad show karo, phir back jao
+  // Save button — pehle language save karo, phir ad show karo, phir back jao
   const handleSave = async () => {
     if (isAdLoading) return;
     setIsAdLoading(true);
@@ -70,11 +83,11 @@ export default function LanguageSelectionScreen() {
 
       const successMsg = t('language.success') || 'Language changed successfully!';
       const successTitle = t('language.successTitle') || 'Success';
-      Alert.alert(successTitle, successMsg);
+      // Alert.alert(successTitle, successMsg);
 
       // Step 2: Ad show karo
       console.log('💾 Language save pressed — attempting ad...');
-      await AdsManager.showLanguageScreenInterstitialAd('save');
+      await AdsManager.showSettingScreenInterstitialAd('save');
     } catch {
       const errorMsg = t('language.error') || 'Failed to change language';
       const errorTitle = t('language.errorTitle') || 'Error';
@@ -91,7 +104,7 @@ export default function LanguageSelectionScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.cardBackground }]}>
 
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+      <View style={[styles.header]}>
 
         <TouchableOpacity
           onPress={handleGoBack}
@@ -131,7 +144,6 @@ export default function LanguageSelectionScreen() {
             : <Ionicons name="checkmark" size={20} color="#fff" />
           }
         </TouchableOpacity>
-
       </View>
 
       {/* Language List */}
@@ -187,6 +199,23 @@ export default function LanguageSelectionScreen() {
           ))}
         </View>
       </ScrollView>
+      {bannerConfig?.show && (
+        <View
+          style={{
+            marginBottom: 0,
+            width: '100%',
+            // flex: 1,
+            justifyContent: 'center',
+            // backgroundColor: colors.background,
+          }}
+        >
+          <GAMBannerAd
+            unitId={bannerConfig.id}
+            sizes={[BannerAdSize.ANCHORED_ADAPTIVE_BANNER]}
+            requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+          />
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -201,14 +230,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 20,
     paddingBottom: 16,
-    borderBottomWidth: 1,
+    // borderBottomWidth: 1,
   },
   iconButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
 
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    // marginLeft: 10,   // 👈 spacing after back button
+    marginLeft: 10,   // 👈 spacing after back button
   },
   saveButtonText: {
     fontSize: 16,

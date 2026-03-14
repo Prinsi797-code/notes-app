@@ -6,6 +6,7 @@ export interface TextStyle {
   italic: boolean;
   underline: boolean;
   list: boolean;
+  leftBorder: boolean;
 }
 
 export interface Note {
@@ -19,6 +20,8 @@ export interface Note {
   createdAt: string;
   updatedAt: string;
   pinned?: boolean;
+  tableData?: TableData;   // ✅ ADD
+
 }
 
 export interface NoteFormData {
@@ -28,4 +31,12 @@ export interface NoteFormData {
   category: Category;
   images: string[];
   textStyle: TextStyle;
+  tableData?: TableData;   // ✅ ADD
+}
+
+// ✅ New type
+export interface TableData {
+  rows: number;
+  cols: number;
+  cellData: string[][];
 }

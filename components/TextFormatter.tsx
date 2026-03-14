@@ -8,7 +8,6 @@ interface TextFormatterProps {
   textStyle: TextStyle;
   onToggle: (key: keyof TextStyle) => void;
   label?: string;
-  
 }
 
 export const TextFormatter: React.FC<TextFormatterProps> = ({
@@ -16,12 +15,13 @@ export const TextFormatter: React.FC<TextFormatterProps> = ({
   onToggle,
   label = 'Text Style',
 }) => {
-    const { t } = useLanguage();
+  const { t } = useLanguage();
 
   return (
     <View style={styles.container}>
       {label && <Text style={styles.label}>{label}</Text>}
       <View style={styles.toolbar}>
+        {/* Bold */}
         <TouchableOpacity
           style={[styles.button, textStyle.bold && styles.buttonActive]}
           onPress={() => onToggle('bold')}
@@ -32,38 +32,29 @@ export const TextFormatter: React.FC<TextFormatterProps> = ({
           </Text>
         </TouchableOpacity>
 
+        {/* Italic */}
         <TouchableOpacity
           style={[styles.button, textStyle.italic && styles.buttonActive]}
           onPress={() => onToggle('italic')}
           activeOpacity={0.7}
         >
-          <Text
-            style={[
-              styles.buttonText,
-              { fontStyle: 'italic' },
-              textStyle.italic && styles.buttonTextActive,
-            ]}
-          >
+          <Text style={[styles.buttonText, { fontStyle: 'italic' }, textStyle.italic && styles.buttonTextActive]}>
             I
           </Text>
         </TouchableOpacity>
 
+        {/* Underline */}
         <TouchableOpacity
           style={[styles.button, textStyle.underline && styles.buttonActive]}
           onPress={() => onToggle('underline')}
           activeOpacity={0.7}
         >
-          <Text
-            style={[
-              styles.buttonText,
-              { textDecorationLine: 'underline' },
-              textStyle.underline && styles.buttonTextActive,
-            ]}
-          >
+          <Text style={[styles.buttonText, { textDecorationLine: 'underline' }, textStyle.underline && styles.buttonTextActive]}>
             U
           </Text>
         </TouchableOpacity>
 
+        {/* List */}
         <TouchableOpacity
           style={[styles.button, textStyle.list && styles.buttonActive]}
           onPress={() => onToggle('list')}
@@ -75,10 +66,27 @@ export const TextFormatter: React.FC<TextFormatterProps> = ({
             color={textStyle.list ? '#fff' : '#333'}
           />
         </TouchableOpacity>
+
+        {/* Left Border Line — new button */}
+        <TouchableOpacity
+          style={[styles.button, textStyle.leftBorder && styles.buttonActive]}
+          onPress={() => onToggle('leftBorder')}
+          activeOpacity={0.7}
+        >
+          {/* Visual: vertical bar + lines */}
+          <View style={styles.leftBorderIcon}>
+            <View style={[
+              styles.leftBorderIconBar,
+              { backgroundColor: textStyle.leftBorder ? '#fff' : '#faab00' }
+            ]} />
+            <View style={styles.leftBorderIconLines}>
+              <View style={[styles.leftBorderIconLine, { backgroundColor: textStyle.leftBorder ? '#fff' : '#555' }]} />
+              <View style={[styles.leftBorderIconLine, styles.lineShort, { backgroundColor: textStyle.leftBorder ? '#fff' : '#555' }]} />
+              <View style={[styles.leftBorderIconLine, { backgroundColor: textStyle.leftBorder ? '#fff' : '#555' }]} />
+            </View>
+          </View>
+        </TouchableOpacity>
       </View>
-      {/* <Text style={styles.hint}>
-        {textStyle.list ? t('home.eachLine')  : t('home.styleText')}
-      </Text> */}
     </View>
   );
 };
@@ -95,7 +103,8 @@ const styles = StyleSheet.create({
   },
   toolbar: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
+    flexWrap: 'wrap',
   },
   button: {
     width: 48,
@@ -119,9 +128,28 @@ const styles = StyleSheet.create({
   buttonTextActive: {
     color: '#fff',
   },
-  hint: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 8,
+  // Left border button icon
+  leftBorderIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    height: 26,
+  },
+  leftBorderIconBar: {
+    width: 3,
+    height: 26,
+    borderRadius: 2,
+  },
+  leftBorderIconLines: {
+    gap: 4,
+    justifyContent: 'center',
+  },
+  leftBorderIconLine: {
+    height: 2.5,
+    width: 18,
+    borderRadius: 2,
+  },
+  lineShort: {
+    width: 12,
   },
 });

@@ -39,11 +39,20 @@ export default function NotesScreen() {
   const [fabOpen, setFabOpen] = useState(false);
   const fabAnimation = useRef(new Animated.Value(0)).current;
 
-  const [bannerConfig, setBannerConfig] = useState<{ show: boolean; id: string } | null>(null);
+  // const [bannerConfig, setBannerConfig] = useState<{ show: boolean; id: string } | null>(null);
 
+  // useEffect(() => {
+  //   const config = AdsManager.getBannerConfig('main');
+  //   if (config) setBannerConfig(config);
+  // }, []);
+
+  const [bannerConfig, setBannerConfig] = useState<{ show: boolean; id: string } | null>(null);
   useEffect(() => {
-    const config = AdsManager.getBannerConfig('main');
-    if (config) setBannerConfig(config);
+    const loadBannerConfig = async () => {
+      const config = await AdsManager.getBannerConfig('main');
+      if (config) setBannerConfig(config);
+    };
+    loadBannerConfig();
   }, []);
 
   useEffect(() => {
@@ -209,7 +218,7 @@ export default function NotesScreen() {
         <View style={styles.headerRight}>
           <TouchableOpacity onPress={() => router.push('/PremiumScreen')} style={styles.premiumButton}>
             <View style={styles.premiumBadge}>
-              <Ionicons name="diamond" size={24} style={[styles.iconButton, { color: colors.primary }]}/>
+              <Ionicons name="diamond" size={24} style={[styles.iconButton, { color: colors.primary }]} />
             </View>
           </TouchableOpacity>
           <TouchableOpacity onPress={toggleLayoutMode} style={styles.layoutButton}>
@@ -302,7 +311,7 @@ export default function NotesScreen() {
         </TouchableOpacity>
       </View>
 
-      {bannerConfig?.show && (
+      {/* {bannerConfig?.show && (
         <View style={styles.stickyAdContainer}>
           <GAMBannerAd
             unitId={bannerConfig.id}
@@ -310,6 +319,23 @@ export default function NotesScreen() {
             requestOptions={{ requestNonPersonalizedAdsOnly: true }}
             onAdLoaded={() => console.log('✅ Banner Ad Loaded')}
             onAdFailedToLoad={(error) => console.log('❌ Banner Ad Failed:', error)}
+          />
+        </View>
+      )} */}
+      {bannerConfig?.show && (
+        <View
+          style={{
+            marginBottom: 0,
+            width: '100%',
+            // flex: 1,
+            justifyContent: 'center',
+            // backgroundColor: colors.background,
+          }}
+        >
+          <GAMBannerAd
+            unitId={bannerConfig.id}
+            sizes={[BannerAdSize.ANCHORED_ADAPTIVE_BANNER]}
+            requestOptions={{ requestNonPersonalizedAdsOnly: true }}
           />
         </View>
       )}
@@ -334,7 +360,7 @@ const styles = StyleSheet.create({
   layoutButton: { padding: 4 },
   settingsButton: { padding: 4 },
   notesList: { flex: 1 },
-  iconButton:{ },
+  iconButton: {},
   notesListContent: { padding: 12, paddingBottom: 100 },
   emptyContentContainer: { flexGrow: 1 },
   loadingContainer: { paddingVertical: 60, alignItems: 'center' },
@@ -351,8 +377,8 @@ const styles = StyleSheet.create({
   fabPillButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,   
-    paddingVertical: 12,    
+    paddingHorizontal: 8,
+    paddingVertical: 12,
     borderRadius: 30,
     gap: 8,
     elevation: 6,
@@ -360,7 +386,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
     shadowRadius: 6,
-    alignSelf: 'flex-start', 
+    alignSelf: 'flex-start',
   },
   fabPillText: { color: '#fff', fontSize: 15, fontWeight: '600', flexShrink: 0 },
   floatingAddButton: {},

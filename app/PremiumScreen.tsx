@@ -84,23 +84,23 @@ export default function PremiumScreen() {
 
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
-  const bg           = isDarkMode ? '#0D0D0D' : '#ffffff';
-  const cardBg       = isDarkMode ? '#1A1A1A' : '#FFFFFF';
-  const textPrimary  = isDarkMode ? '#FFFFFF' : '#1A1A1A';
+  const bg = isDarkMode ? '#0D0D0D' : '#ffffff';
+  const cardBg = isDarkMode ? '#1A1A1A' : '#FFFFFF';
+  const textPrimary = isDarkMode ? '#FFFFFF' : '#1A1A1A';
   const textSecondary = isDarkMode ? '#AAAAAA' : '#666666';
-  const accent       = '#faab00';
-  const activeGreen  = '#22c55e';
+  const accent = '#faab00';
+  const activeGreen = '#22c55e';
 
   useEffect(() => {
     initAndLoad();
-    return () => {};
+    return () => { };
   }, []);
 
   // ✅ ProductId se PlanKey detect karo (calendar app logic)
   const getPlanKeyFromProductId = (productId: string): PlanKey | null => {
-    if (productId.includes('yearly'))  return 'yearly';
+    if (productId.includes('yearly')) return 'yearly';
     if (productId.includes('monthly')) return 'monthly';
-    if (productId.includes('weekly'))  return 'weekly';
+    if (productId.includes('weekly')) return 'weekly';
     return null;
   };
 
@@ -226,16 +226,37 @@ export default function PremiumScreen() {
       >
         {/* Hero */}
         <View style={styles.heroSection}>
-          <Image source={require('../assets/images/Frame.png')} style={styles.heroImage} resizeMode="cover" />
+          <Image
+            source={
+              isDarkMode
+                ? require('../assets/images/Frame2.png')
+                : require('../assets/images/Frame.png')
+            }
+            style={styles.heroImage}
+            resizeMode="cover"
+          />
+
           <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
-            <View style={[styles.closeBtnCircle, {
-              backgroundColor: isDarkMode ? 'rgba(42,42,42,0.85)' : 'rgba(240,240,240,0.85)'
-            }]}>
+            <View
+              style={[
+                styles.closeBtnCircle,
+                {
+                  backgroundColor: isDarkMode
+                    ? 'rgba(42,42,42,0.85)'
+                    : 'rgba(240,240,240,0.85)',
+                },
+              ]}
+            >
               <Ionicons name="close" size={20} color={textSecondary} />
             </View>
           </TouchableOpacity>
+
           <View style={styles.titleOverlay}>
-            <Text style={styles.titleOverlayText}>{t('home.removeads')}</Text>
+            <Text style={[styles.titleOverlayText, { color: isDarkMode ? '#FFFFFF' : '#383838' }]}>
+              {t('home.removeads')}
+            </Text>
+
+            {/* <Text style={styles.titleOverlayText}>{t('home.removeads')}</Text> */}
           </View>
         </View>
 
@@ -250,7 +271,7 @@ export default function PremiumScreen() {
         <View style={styles.plansContainer}>
           {PLANS.map((plan) => {
             const isSelected = selectedPlan === plan.key;
-            const isActive   = activePlanKey === plan.key;
+            const isActive = activePlanKey === plan.key;
 
             return (
               <TouchableOpacity

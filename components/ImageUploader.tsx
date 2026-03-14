@@ -36,10 +36,10 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         disabled={loading}
       >
         {loading ? (
-          <ActivityIndicator color="#6200EE" />
+          <ActivityIndicator color="#faab00" />
         ) : (
           <>
-            <Ionicons name="image-outline" size={24} color="#6200EE" />
+            <Ionicons name="image-outline" size={24} color="#faab00" />
             <Text style={styles.uploadText}>Add Images</Text>
           </>
         )}
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
   uploadText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#6200EE',
+    color: '#faab00',
     marginLeft: 10,
   },
   imageScroll: {

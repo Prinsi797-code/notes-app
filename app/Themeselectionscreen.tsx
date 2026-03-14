@@ -11,6 +11,10 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import {
+  BannerAdSize,
+  GAMBannerAd
+} from 'react-native-google-mobile-ads';
 
 type ThemeMode = 'Light' | 'Dark' | 'System';
 
@@ -24,34 +28,41 @@ export default function ThemeSelectionScreen() {
     setSelectedTheme(currentTheme);
   }, [currentTheme]);
 
-  // ✅ Back button — setting_screen inter ad
   const handleGoBack = async () => {
     if (isAdLoading) return;
     setIsAdLoading(true);
+     await AdsManager.showSettingScreenInterstitialAd('setting_screen', 'back');
     try {
-      console.log('⬅️ Theme back pressed — attempting ad...');
+      console.log('Theme back pressed — attempting ad...');
       await AdsManager.showSettingScreenInterstitialAd('back');
     } catch (error) {
-      console.log('❌ Theme back ad error:', error);
+      console.log('Theme back ad error:', error);
     } finally {
       setIsAdLoading(false);
       router.back();
+       await AdsManager.showSettingScreenInterstitialAd('setting_screen', 'back');
     }
   };
 
-  // ✅ Save button — pehle theme save, phir setting_screen inter ad
+  const [bannerConfig, setBannerConfig] = useState<{ show: boolean; id: string } | null>(null);
+  useEffect(() => {
+    const loadBannerConfig = async () => {
+      const config = await AdsManager.getBannerConfig('setting');
+      if (config) setBannerConfig(config);
+    };
+    loadBannerConfig();
+  }, []);
+
   const handleSave = async () => {
     if (isAdLoading) return;
     setIsAdLoading(true);
+    await AdsManager.showSettingScreenInterstitialAd('setting_screen', 'save');
     try {
-      // Step 1: Theme save karo
       await setThemeMode(selectedTheme);
-
-      // Step 2: Ad show karo
-      console.log('💾 Theme save pressed — attempting ad...');
+      console.log('Theme save pressed — attempting ad...');
       await AdsManager.showSettingScreenInterstitialAd('save');
     } catch (error) {
-      console.log('❌ Theme save ad error:', error);
+      console.log('Theme save ad error:', error);
     } finally {
       setIsAdLoading(false);
       router.back();
@@ -69,9 +80,9 @@ export default function ThemeSelectionScreen() {
   ];
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.cardBackground }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.cardBackground, flex: 1 }]}>
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+      <View style={[styles.header]}>
         <TouchableOpacity
           onPress={handleGoBack}
           style={styles.backButton}
@@ -109,12 +120,10 @@ export default function ThemeSelectionScreen() {
             : <Ionicons name="checkmark" size={20} color="#fff" />
           }
         </TouchableOpacity>
-
-
       </View>
 
       {/* Mode Label */}
-      <View style={styles.content}>
+        <View style={[styles.content, { flex: 1 }]}>
         <Text style={[styles.modeLabel, { color: colors.textSecondary }]}>
           {t('home.mode')}
         </Text>
@@ -205,6 +214,21 @@ export default function ThemeSelectionScreen() {
           ))}
         </View>
       </View>
+      {bannerConfig?.show && (
+        <View
+          style={{
+            width: '100%',
+            alignItems: 'center',
+            backgroundColor: colors.cardBackground,
+          }}
+        >
+          <GAMBannerAd
+            unitId={bannerConfig.id}
+            sizes={[BannerAdSize.ANCHORED_ADAPTIVE_BANNER]}
+            requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+          />
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -219,7 +243,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 20,
     paddingBottom: 16,
-    borderBottomWidth: 1,
+    // borderBottomWidth: 1,
   },
   backButton: {
     padding: 4,
@@ -273,7 +297,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 8,
   },
-   saveButtonText: {
+  saveButtonText: {
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'right',
