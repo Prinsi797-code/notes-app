@@ -26,14 +26,12 @@ export default function RootLayout() {
   }, []);
 
   const handleAppStateChange = async (nextAppState: AppStateStatus) => {
-    // Sirf tab trigger ho jab app background/inactive se active ho
     if (
       (appState.current === 'background' || appState.current === 'inactive') &&
       nextAppState === 'active'
     ) {
       console.log('📱 App came to foreground (resume)');
 
-      // Ads initialized ho chuki hain aur user premium nahi hai
       if (adsInitialized.current && !isUserPremium) {
         await AdsManager.showAppResumeAd();
       }
@@ -75,24 +73,26 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider>
-      <LanguageProvider>
-        <Stack>
-          <Stack.Screen
-            name="SplashScreen"
-            options={{ headerShown: false, animation: 'none' }}
-          />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="NoteEditor" options={{ headerShown: false }} />
-          <Stack.Screen name="ChecklistScreen" options={{ headerShown: false }} />
-          <Stack.Screen name="SettingsScreen" options={{ headerShown: false }} />
-          <Stack.Screen name="Languageselectionscreen" options={{ headerShown: false }} />
-          <Stack.Screen name="Themeselectionscreen" options={{ headerShown: false }} />
-          <Stack.Screen name="PremiumScreen" options={{ headerShown: false }} />
-          <Stack.Screen name="DrawingScreen" options={{ headerShown: false }} />
-          <Stack.Screen name="Purchasesuccessscreen" options={{ headerShown: false }} />
-        </Stack>
-      </LanguageProvider>
-    </ThemeProvider>
+    // <NoteThemeProvider>
+      <ThemeProvider>
+        <LanguageProvider>
+          <Stack>
+            <Stack.Screen
+              name="SplashScreen"
+              options={{ headerShown: false, animation: 'none' }}
+            />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="NoteEditor" options={{ headerShown: false }} />
+            <Stack.Screen name="ChecklistScreen" options={{ headerShown: false }} />
+            <Stack.Screen name="SettingsScreen" options={{ headerShown: false }} />
+            <Stack.Screen name="Languageselectionscreen" options={{ headerShown: false }} />
+            <Stack.Screen name="Themeselectionscreen" options={{ headerShown: false }} />
+            <Stack.Screen name="PremiumScreen" options={{ headerShown: false }} />
+            <Stack.Screen name="DrawingScreen" options={{ headerShown: false }} />
+            <Stack.Screen name="Purchasesuccessscreen" options={{ headerShown: false }} />
+          </Stack>
+        </LanguageProvider>
+      </ThemeProvider>
+    // </NoteThemeProvider>
   );
 }

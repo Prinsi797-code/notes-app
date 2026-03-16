@@ -1,3 +1,4 @@
+// types/Note.ts
 import { Category } from '@/constants/Categories';
 import { NoteColor } from '@/constants/Colors';
 
@@ -20,8 +21,8 @@ export interface Note {
   createdAt: string;
   updatedAt: string;
   pinned?: boolean;
-  tableData?: TableData;   // ✅ ADD
-
+  tableData?: TableData;
+  themeId?: string;        // ✅ per-note theme  e.g. 'theme1' | 'none' | undefined
 }
 
 export interface NoteFormData {
@@ -31,10 +32,10 @@ export interface NoteFormData {
   category: Category;
   images: string[];
   textStyle: TextStyle;
-  tableData?: TableData;   // ✅ ADD
+  tableData?: TableData;
+  themeId?: string;        // ✅ per-note theme
 }
 
-// ✅ New type
 export interface TableData {
   rows: number;
   cols: number;

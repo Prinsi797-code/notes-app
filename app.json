@@ -4,6 +4,7 @@
     "slug": "my-notes-app",
     "version": "1.0.1",
     "orientation": "portrait",
+    "owner": "prinsi850",
     "icon": "./assets/images/logo.png",
     "scheme": "mynotesapp",
     "userInterfaceStyle": "automatic",
@@ -64,7 +65,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "4e4ec0f4-9ad9-4cd2-b236-097ad916aded"
+        "projectId": "e2dfccc8-be1a-40af-b7b8-b024c5218bd6"
       }
     }
   }
